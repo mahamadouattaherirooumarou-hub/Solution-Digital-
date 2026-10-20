@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Solution Digital - Gestion d'argent</title>
+<style>
+:root { --noir:#111; --rouge:#d62828; --vert:#2e7d32; color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:#fff; color:#111; }
+header { background:var(--noir); color:#fff; padding:18px 16px; padding-top:calc(18px + env(safe-area-inset-top,0px)); }
+header h1 { margin:0; font-size:20px; }
+header p { margin:4px 0 0; color:#ccc; font-size:13px; }
+main { max-width:520px; margin:0 auto; padding:16px; }
+.solde { background:var(--noir); color:#fff; border-radius:14px; padding:18px; margin-bottom:14px; }
+.solde .label { font-size:13px; color:#ccc; }
+.solde .montant { font-size:28px; font-weight:700; margin-top:4px; }
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.mini { border:1px solid #ddd; border-radius:12px; padding:12px; }
+.mini .label { font-size:12px; color:#666; }
+.mini .val { font-size:18px; font-weight:700; margin-top:4px; }
+h2 { font-size:16px; margin:18px 0 8px; }
+form { border:1px solid #ddd; border-radius:12px; padding:12px; }
+input, select { width:100%; font:inherit; padding:10px; border:1px solid #ccc; border-radius:10px; margin-bottom:8px; background:#fff; }
+.types { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+.types button { font:inherit; padding:10px; border-radius:10px; border:1px solid #ccc; background:#fff; cursor:pointer; }
+.types button.sel.rev { background:var(--vert); color:#fff; border-color:var(--vert); }
+.types button.sel.dep { background:var(--rouge); color:#fff; border-color:var(--rouge); }
+.btn { width:100%; background:var(--noir); color:#fff; border:none; border-radius:10px; padding:12px; font:inherit; font-weight:700; cursor:pointer; }
+.op { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:10px 0; gap:8px; }
+.op .sub { font-size:12px; color:#777; }
+.plus { color:var(--vert); font-weight:700; white-space:nowrap; }
+.moins { color:var(--rouge); font-weight:700; white-space:nowrap; }
+.del { border:none; background:none; color:#999; cursor:pointer; font-size:16px; }
+.err { color:var(--rouge); font-size:13px; margin:0 0 8px; display:none; }
+footer { text-align:center; font-size:12px; color:#888; padding:24px 0; }
+</style>
+</head>
+<body>
+<header style="display:flex;align-items:center;gap:12px"><img src="logo_solution_digital_original.png" alt="Solution Digital" style="height:44px"><h1>Solution Digital — Gestion d'argent</h1></header>
+  <p>Suivez vos revenus et dépenses, chaque jour, simplement</p>
+</header>
+<main>
+  <div class="solde">
+    <div class="label">Solde actuel</div>
+    <div class="montant" id="solde">0 FCFA</div>
+  </div>
+
+  <div class="row2">
+    <div class="mini"><div class="label">Revenus</div><div class="val plus" id="rev">0 FCFA</div></div>
+    <div class="mini"><div class="label">Dépenses</div><div class="val moins" id="dep">0 FCFA</div></div>
+  </div>
+
+  <h2>Nouvelle opération</h2>
+  <form id="form">
+    <div class="types">
+      <button type="button" class="rev sel" data-t="rev">+ Revenu</button>
+      <button type="button" class="dep" data-t="dep">− Dépense</button>
+    </div>
+    <p class="err" id="err">Renseignez un libellé et un montant valide.</p>
+    <input type="text" id="libelle" placeholder="Libellé (ex : vente, transport, loyer)">
+    <input type="number" id="montant" placeholder="Montant en FCFA" min="1">
+    <select id="categorie">
+      <option>Ventes</option>
+      <option>Transport</option>
+      <option>Alimentation</option>
+      <option>Factures</option>
+      <option>Loisirs</option>
+      <option>Autres</option>
+    </select>
+    <button class="btn" type="submit">Enregistrer</button>
+  </form>
+
+  <h2>Historique</h2>
+  <div id="liste"></div>
+</main>
+<footer>Démo réalisée par Solution Digital — « Gérez tout, simplement »</footer>
+
+<script>
+let operations = [
+  { id:1, type:"rev", libelle:"Vente de sandwichs", montant:25000, categorie:"Ventes", date:"2026-10-18" },
+  { id:2, type:"dep", libelle:"Courses du marché", montant:8500, categorie:"Alimentation", date:"2026-10-18" },
+  { id:3, type:"dep", libelle:"Carburant moto", montant:6000, categorie:"Transport", date:"2026-10-17" }
+];
+let nextId = 4;
+let type = "rev";
+const fmt = n => n.toLocaleString("fr-FR") + " FCFA";
+
+document.querySelectorAll(".types button").forEach(b => b.onclick = () => {
+  type = b.dataset.t;
+  document.querySelectorAll(".types button").forEach(x => x.classList.toggle("sel", x === b));
+});
+
+function render() {
+  const rev = operations.filter(o => o.type === "rev").reduce((s,o) => s + o.montant, 0);
+  const dep = operations.filter(o => o.type === "dep").reduce((s,o) => s + o.montant, 0);
+  document.getElementById("solde").textContent = fmt(rev - dep);
+  document.getElementById("rev").textContent = fmt(rev);
+  document.getElementById("dep").textContent = fmt(dep);
+  document.getElementById("liste").innerHTML = operations
+    .slice().sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id)
+    .map(o => `
+      <div class="op">
+        <div><strong>${o.libelle}</strong><div class="sub">${o.categorie} · ${o.date}</div></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="${o.type === "rev" ? "plus" : "moins"}">${o.type === "rev" ? "+" : "−"} ${fmt(o.montant)}</span>
+          <button class="del" data-id="${o.id}" title="Supprimer">✕</button>
+        </div>
+      </div>`).join("") || "<p class='sub'>Aucune opération pour le moment.</p>";
+  document.querySelectorAll(".del").forEach(b => b.onclick = () => {
+    operations = operations.filter(o => o.id !== +b.dataset.id);
+    render();
+  });
+}
+
+document.getElementById("form").onsubmit = e => {
+  e.preventDefault();
+  const libelle = document.getElementById("libelle").value.trim();
+  const montant = Math.round(+document.getElementById("montant").value);
+  const err = document.getElementById("err");
+  if (!libelle || !(montant > 0)) { err.style.display = "block"; return; }
+  err.style.display = "none";
+  operations.push({
+    id: nextId++, type, libelle, montant,
+    categorie: document.getElementById("categorie").value,
+    date: new Date().toISOString().slice(0,10)
+  });
+  document.getElementById("libelle").value = "";
+  document.getElementById("montant").value = "";
+  render();
+};
+
+render();
+</script>
+</body>
+</html>
